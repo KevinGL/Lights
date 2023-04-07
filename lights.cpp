@@ -47,9 +47,15 @@ void Lights::SendToShader(GLuint shaderId)
 
         glUniform1f(glGetUniformLocation(shaderId, local.c_str()), lights[i].angle);
 
-        local = "lights[" + os.str() + "].type";
+        local = "lights[" + os.str() + "].intensity";
 
-        //std::cout << lights[i].type << std::endl;
+        glUniform1f(glGetUniformLocation(shaderId, local.c_str()), lights[i].intensity);
+
+        local = "lights[" + os.str() + "].ambient";
+
+        glUniform1f(glGetUniformLocation(shaderId, local.c_str()), lights[i].ambient);
+
+        local = "lights[" + os.str() + "].type";
 
         glUniform1i(glGetUniformLocation(shaderId, local.c_str()), lights[i].type);
 
@@ -121,6 +127,16 @@ void Lights::setAngle(const float angle, const size_t index)
     lights[index].angle = angle;
 }
 
+void Lights::setIntensity(const float intensity, const size_t index)
+{
+    if(index >= lights.size())
+    {
+        return;
+    }
+
+    lights[index].intensity = intensity;
+}
+
 void Lights::setType(const LightType type, const size_t index)
 {
     if(index >= lights.size())
@@ -159,4 +175,39 @@ bool Lights::getOn(const size_t index)
     }
 
     return lights[index].on;
+}
+
+LightType Lights::getType(const size_t index)
+{
+    if(index >= lights.size())
+    {
+        return LIGHT_UNDEFINED;
+    }
+
+    return lights[index].type;
+}
+
+std::vector<Light> Lights::getLights()
+{
+    return lights;
+}
+
+float Lights::getAmbient(const size_t index)
+{
+    if(index >= lights.size())
+    {
+        return 0;
+    }
+
+    return lights[index].ambient;
+}
+
+void Lights::setAmbient(const float ambient, const size_t index)
+{
+    if(index >= lights.size())
+    {
+        return;
+    }
+
+    lights[index].ambient = ambient;
 }

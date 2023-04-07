@@ -12,6 +12,7 @@ enum LightType
     LIGHT_SUN,
     LIGHT_DIR,
     LIGHT_PROJ,
+    LIGHT_UNDEFINED,
 };
 
 enum LightEffect
@@ -28,6 +29,8 @@ struct Light
     glm::vec3 color;
     float distMax;
     float angle;
+    float intensity;
+    float ambient;
     LightType type;
     bool on = true;
 };
@@ -47,9 +50,14 @@ class Lights
     void setColor(const glm::vec3 color, const size_t index);
     void setDistMax(const float distMax, const size_t index);
     void setAngle(const float angle, const size_t index);
+    void setIntensity(const float intensity, const size_t index);
     void setType(const LightType type, const size_t index);
+    LightType getType(const size_t index);
     void setOn(const size_t index);
     void setOff(const size_t index);
     bool getOn(const size_t index);
+    float getAmbient(const size_t index);
+    void setAmbient(const float ambient, const size_t index);
+    std::vector<Light> getLights();
     void SendToShader(GLuint shaderId);
 };
