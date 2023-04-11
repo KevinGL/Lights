@@ -11,7 +11,7 @@ struct Light
 	int on;
 };
 
-uniform Light lights[20];
+uniform Light lights[100];
 uniform int nbLights;
 
 float PI = 3.1415926535897932384626433832795;

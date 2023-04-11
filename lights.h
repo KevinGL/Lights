@@ -45,7 +45,10 @@ class Lights
     public :
 
     void AddLight(Light light);
+    void AddLightIfNotExists(Light light);
     void setLight(const Light light, const size_t index);
+    Light* getLight(const size_t index);
+    bool setLightByName(const Light light, const std::string name);
     void setDir(const glm::vec3 dir, const size_t index);
     void setPos(const glm::vec3 pos, const size_t index);
     void setColor(const glm::vec3 color, const size_t index);

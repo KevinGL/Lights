@@ -77,6 +77,44 @@ void Lights::setLight(const Light light, const size_t index)
     lights[index] = light;
 }
 
+bool Lights::setLightByName(const Light light, const std::string name)
+{
+    for(size_t i=0; i<lights.size(); i++)
+    {
+        if(lights[i].name == name)
+        {
+            lights[i] = light;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void Lights::AddLightIfNotExists(Light light)
+{
+    for(size_t i=0; i<lights.size(); i++)
+    {
+        if(lights[i].name == light.name)
+        {
+            lights[i] = light;
+            return;
+        }
+    }
+
+    lights.push_back(light);
+}
+
+Light* Lights::getLight(const size_t index)
+{
+    if(index >= lights.size())
+    {
+        return nullptr;
+    }
+
+    return &lights[index];
+}
+
 void Lights::setDir(const glm::vec3 dir, const size_t index)
 {
     if(index >= lights.size())
