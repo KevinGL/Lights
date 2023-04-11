@@ -14,7 +14,7 @@ struct Light
 uniform Light lights[20];
 uniform int nbLights;
 
-float attenuations[20];
+float PI = 3.1415926535897932384626433832795;
 
 float calculDiff(Light light)
 {
@@ -22,9 +22,9 @@ float calculDiff(Light light)
 	
 	if(light.type == 0)		//Point
 	{
-		vec3 lightDir = normalize(light.pos - frag);
+		vec3 rayDir = normalize(light.pos - frag);
 		
-		lightDiff = dot(normaleFrag, lightDir);
+		lightDiff = dot(normaleFrag, rayDir);
 		
 		if(lightDiff < 0.0)
 		{
@@ -55,9 +55,9 @@ float calculDiff(Light light)
 	else
 	if(light.type == 1)		//Sun
 	{
-		vec3 lightDir = -normalize(light.dir);		//From frag to Sun
+		vec3 rayDir = -normalize(light.dir);		//From frag to Sun
 		
-		lightDiff = dot(normaleFrag, lightDir);
+		lightDiff = dot(normaleFrag, rayDir);
 		
 		if(lightDiff < 0.0)
 		{
@@ -68,9 +68,9 @@ float calculDiff(Light light)
 	else
 	if(light.type == 2)		//Direction
 	{
-		vec3 lightDir = -normalize(light.dir);		//From frag to light
+		vec3 rayDir = -normalize(light.dir);		//From frag to light
 		
-		lightDiff = dot(normaleFrag, lightDir);
+		lightDiff = dot(normaleFrag, rayDir);
 		
 		if(lightDiff < 0.0)
 		{
@@ -96,6 +96,56 @@ float calculDiff(Light light)
 			
 			lightDiff *= att;
 		}
+	}
+	
+	else
+	if(light.type == 3)		//Projector
+	{
+		vec3 rayDir = normalize(light.pos - frag);
+		
+		lightDiff = dot(normaleFrag, rayDir);
+		
+		if(lightDiff < 0.0)
+		{
+			lightDiff = 0.0;
+		}
+		
+		if(light.distMax != -1.0)
+		{
+			float dist = length(light.pos - frag);
+			
+			float coef = -1.0/light.distMax;
+			
+			float att;
+			
+			if(dist <= light.distMax)
+			{
+				att = coef * dist + 1.0;
+			}
+			else
+			{
+				att = 0.0;
+			}
+			
+			lightDiff *= att;
+		}
+		
+		float angleLightDir_RayDir = acos(dot(normalize(light.dir), -rayDir)) * 180/PI;
+		
+		float att;
+		
+		if(angleLightDir_RayDir <= light.angle/2)
+		{
+			float coef = -1.0/(light.angle/2);
+			
+			att = coef * angleLightDir_RayDir + 1.0;
+		}
+		else
+		{
+			att = 0.0;
+		}
+		
+		lightDiff *= att;
 	}
 	
 	return lightDiff;

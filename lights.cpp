@@ -202,6 +202,16 @@ float Lights::getAmbient(const size_t index)
     return lights[index].ambient;
 }
 
+std::string Lights::getName(const size_t index)
+{
+    if(index >= lights.size())
+    {
+        return "";
+    }
+
+    return lights[index].name;
+}
+
 void Lights::setAmbient(const float ambient, const size_t index)
 {
     if(index >= lights.size())

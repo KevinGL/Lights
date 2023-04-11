@@ -33,6 +33,7 @@ struct Light
     float ambient;
     LightType type;
     bool on = true;
+    std::string name;
 };
 
 class Lights
@@ -56,6 +57,7 @@ class Lights
     void setOn(const size_t index);
     void setOff(const size_t index);
     bool getOn(const size_t index);
+    std::string getName(const size_t index);
     float getAmbient(const size_t index);
     void setAmbient(const float ambient, const size_t index);
     std::vector<Light> getLights();
