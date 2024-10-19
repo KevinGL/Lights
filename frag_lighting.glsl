@@ -222,6 +222,31 @@ vec4 lighting(vec4 initColor, vec3 normalApp, vec3 fragApp)
 	return vec4(lightColor * initColor.rgb, initColor.a);
 }
 
+vec4 lightingSetAmbient(int index, float ambient, vec4 initColor, vec3 normalApp, vec3 fragApp)
+{
+	vec3 lightColor = vec3(0.0, 0.0, 0.0);
+	
+	for(int i=0; i<nbLights; i++)
+	{
+		if(lights[i].on == 1)
+		{
+			float lightDiff = calculDiff(lights[i], normalApp, fragApp);
+			
+			if(i == index)
+			{
+				lightColor += (lightDiff + ambient) * lights[i].intensity * lights[i].color;
+			}
+			
+			else
+			{
+				lightColor += (lightDiff + lights[i].ambient) * lights[i].intensity * lights[i].color;
+			}
+		}
+	}
+	
+	return vec4(lightColor * initColor.rgb, initColor.a);
+}
+
 vec4 lightingWithAttenuation(vec4 initColor, int indexAtt, float att, vec3 normalApp, vec3 fragApp)
 {
 	vec3 lightColor = vec3(0.0, 0.0, 0.0);
