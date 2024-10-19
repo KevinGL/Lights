@@ -36,11 +36,22 @@ struct Light
     std::string name;
 };
 
+struct Shadow
+{
+    GLuint tex = 0;
+    GLuint fbo = 0;
+    unsigned int size = 1024;
+    glm::mat4 matrixProj;
+    glm::mat4 matrixView;
+    bool active = false;
+};
+
 class Lights
 {
     private :
 
     std::vector<Light> lights;
+    Shadow shadow;
 
     public :
 
@@ -62,7 +73,22 @@ class Lights
     bool getOn(const size_t index);
     std::string getName(const size_t index);
     float getAmbient(const size_t index);
+    float getIntensity(const size_t index);
     void setAmbient(const float ambient, const size_t index);
     std::vector<Light> getLights();
-    void SendToShader(GLuint shaderId);
+    void SendToShader(GLuint shaderId, const int nbTex = -1);
+    void Clear()
+    {
+        lights.clear();
+    }
+    size_t getSize()
+    {
+        return lights.size();
+    }
+    void InitShadow();
+
+    Shadow *getShadow()
+    {
+        return &shadow;
+    }
 };

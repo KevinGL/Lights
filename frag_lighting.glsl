@@ -14,17 +14,69 @@ struct Light
 uniform Light lights[100];
 uniform int nbLights;
 
+uniform sampler2D shadowMap;
+uniform int sizeShadow;
+uniform int active = 0;
+
+in vec4 projShadow;
+
 float PI = 3.1415926535897932384626433832795;
 
-float calculDiff(Light light)
+float calculShadow(Light light, vec3 normalApp)
+{
+	if(active == 0)
+	{
+		return 1.0;
+	}
+	
+	vec3 projCoords = projShadow.xyz / projShadow.w;
+	projCoords = projCoords * 0.5 + 0.5;
+	
+	float shadow = 0.0;
+	float currentDepth = projCoords.z;
+	float totalWeight = 0.0;
+	float texelSize = 1.0 / sizeShadow;
+	
+	int res = 2;
+	
+	for(int y = -res; y <= res; y++)
+	{
+		for(int x = -res; x <= res; x++)
+		{
+			vec2 offset = vec2(x, y) * texelSize;
+			float closestDepth = texture(shadowMap, projCoords.xy + offset).r;
+			
+			float weight = 1.0;
+			totalWeight += weight;
+			
+			float biasMin = 0.0005;
+			float biasMax = 0.04;
+			float dotProd = abs(dot(normalApp, light.dir));
+			float coef = (biasMax - biasMin) / 1.0;
+			//float bias = coef * dotProd + biasMax;
+			
+			float baseBias = 0.005;
+			float dynamicBias = 0.005 * dot(normalApp, light.dir);
+			float bias = baseBias + clamp(dynamicBias, 0.0, 0.002);
+
+			shadow += currentDepth - bias > closestDepth ? 1.0 : 0.0;
+		}
+	}
+	
+	shadow /= totalWeight;
+	
+	return 1.0 - shadow;
+}
+
+float calculDiff(Light light, vec3 normalApp, vec3 fragApp)
 {
 	float lightDiff;
 	
 	if(light.type == 0)		//Point
 	{
-		vec3 rayDir = normalize(light.pos - frag);
+		vec3 rayDir = normalize(light.pos - fragApp);
 		
-		lightDiff = dot(normaleFrag, rayDir);
+		lightDiff = dot(normalApp, rayDir);
 		
 		if(lightDiff < 0.0)
 		{
@@ -33,7 +85,7 @@ float calculDiff(Light light)
 		
 		if(light.distMax != -1.0)
 		{
-			float dist = length(light.pos - frag);
+			float dist = length(light.pos - fragApp);
 			
 			float coef = -1.0/light.distMax;
 			
@@ -57,12 +109,14 @@ float calculDiff(Light light)
 	{
 		vec3 rayDir = -normalize(light.dir);		//From frag to Sun
 		
-		lightDiff = dot(normaleFrag, rayDir);
+		lightDiff = dot(normalApp, rayDir);
 		
 		if(lightDiff < 0.0)
 		{
 			lightDiff = 0.0;
 		}
+		
+		lightDiff *= calculShadow(light, normalApp);
 	}
 	
 	else
@@ -70,7 +124,7 @@ float calculDiff(Light light)
 	{
 		vec3 rayDir = -normalize(light.dir);		//From frag to light
 		
-		lightDiff = dot(normaleFrag, rayDir);
+		lightDiff = dot(normalApp, rayDir);
 		
 		if(lightDiff < 0.0)
 		{
@@ -79,7 +133,7 @@ float calculDiff(Light light)
 		
 		if(light.distMax != -1.0)
 		{
-			float dist = length(light.pos - frag);
+			float dist = length(light.pos - fragApp);
 			
 			float coef = -1.0/light.distMax;
 			
@@ -101,9 +155,9 @@ float calculDiff(Light light)
 	else
 	if(light.type == 3)		//Projector
 	{
-		vec3 rayDir = normalize(light.pos - frag);
+		vec3 rayDir = normalize(light.pos - fragApp);
 		
-		lightDiff = dot(normaleFrag, rayDir);
+		lightDiff = dot(normalApp, rayDir);
 		
 		if(lightDiff < 0.0)
 		{
@@ -112,7 +166,7 @@ float calculDiff(Light light)
 		
 		if(light.distMax != -1.0)
 		{
-			float dist = length(light.pos - frag);
+			float dist = length(light.pos - fragApp);
 			
 			float coef = -1.0/light.distMax;
 			
@@ -130,7 +184,7 @@ float calculDiff(Light light)
 			lightDiff *= att;
 		}
 		
-		float angleLightDir_RayDir = acos(dot(normalize(light.dir), -rayDir)) * 180/PI;
+		/*float angleLightDir_RayDir = acos(dot(normalize(light.dir), -rayDir)) * 180/PI;
 		
 		float att;
 		
@@ -145,13 +199,13 @@ float calculDiff(Light light)
 			att = 0.0;
 		}
 		
-		lightDiff *= att;
+		lightDiff *= att;*/
 	}
 	
 	return lightDiff;
 }
 
-vec4 lighting(vec4 initColor)
+vec4 lighting(vec4 initColor, vec3 normalApp, vec3 fragApp)
 {
 	vec3 lightColor = vec3(0.0, 0.0, 0.0);
 	
@@ -159,7 +213,7 @@ vec4 lighting(vec4 initColor)
 	{
 		if(lights[i].on == 1)
 		{
-			float lightDiff = calculDiff(lights[i]);
+			float lightDiff = calculDiff(lights[i], normalApp, fragApp);
 			
 			lightColor += (lightDiff + lights[i].ambient) * lights[i].intensity * lights[i].color;
 		}
@@ -168,7 +222,7 @@ vec4 lighting(vec4 initColor)
 	return vec4(lightColor * initColor.rgb, initColor.a);
 }
 
-vec4 lightingWithAttenuation(vec4 initColor, int indexAtt, float att)
+vec4 lightingWithAttenuation(vec4 initColor, int indexAtt, float att, vec3 normalApp, vec3 fragApp)
 {
 	vec3 lightColor = vec3(0.0, 0.0, 0.0);
 	
@@ -176,7 +230,7 @@ vec4 lightingWithAttenuation(vec4 initColor, int indexAtt, float att)
 	{
 		if(lights[i].on == 1)
 		{
-			float lightDiff = calculDiff(lights[i]);
+			float lightDiff = calculDiff(lights[i], normalApp, fragApp);
 			
 			if(i != indexAtt)
 			{
@@ -192,7 +246,7 @@ vec4 lightingWithAttenuation(vec4 initColor, int indexAtt, float att)
 	return vec4(lightColor * initColor.rgb, initColor.a);
 }
 
-vec4 lightingExceptOne(int index, vec4 initColor)
+vec4 lightingExceptOne(int index, vec4 initColor, vec3 normalApp, vec3 fragApp)
 {
 	vec3 lightColor = vec3(0.0, 0.0, 0.0);
 	
@@ -202,7 +256,7 @@ vec4 lightingExceptOne(int index, vec4 initColor)
 		{
 			if(lights[i].on == 1)
 			{
-				float lightDiff = calculDiff(lights[i]);
+				float lightDiff = calculDiff(lights[i], normalApp, fragApp);
 			
 				lightColor += (lightDiff + lights[i].ambient) * lights[i].intensity * lights[i].color;
 			}
@@ -212,13 +266,13 @@ vec4 lightingExceptOne(int index, vec4 initColor)
 	return vec4(lightColor * initColor.rgb, initColor.a);
 }
 
-vec4 lightingOne(int index, vec4 initColor)
+vec4 lightingOne(int index, vec4 initColor, vec3 normalApp, vec3 fragApp)
 {
 	vec3 lightColor = vec3(0.0, 0.0, 0.0);
 	
 	if(lights[index].on == 1)
 	{
-		float lightDiff = calculDiff(lights[index]);
+		float lightDiff = calculDiff(lights[index], normalApp, fragApp);
 			
 		lightColor += (lightDiff + lights[index].ambient) * lights[index].intensity * lights[index].color;
 	}
@@ -226,13 +280,13 @@ vec4 lightingOne(int index, vec4 initColor)
 	return vec4(lightColor * initColor.rgb, initColor.a);
 }
 
-vec4 addLight(int index, vec4 initColor)
+vec4 addLight(int index, vec4 initColor, vec3 normalApp, vec3 fragApp)
 {
 	vec3 lightColor;
 	
 	if(lights[index].on == 1)
 	{
-		float lightDiff = calculDiff(lights[index]);
+		float lightDiff = calculDiff(lights[index], normalApp, fragApp);
 			
 		lightColor = (lightDiff + lights[index].ambient) * lights[index].intensity * lights[index].color;
 	}

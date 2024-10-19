@@ -19,7 +19,7 @@ void Lights::AddLight(Light light)
     lights.push_back(light);
 }
 
-void Lights::SendToShader(GLuint shaderId)
+void Lights::SendToShader(GLuint shaderId, const int nbTex)
 {
     for(size_t i=0; i<lights.size(); i++)
     {
@@ -65,6 +65,34 @@ void Lights::SendToShader(GLuint shaderId)
     }
 
     glUniform1i(glGetUniformLocation(shaderId, "nbLights"), lights.size());
+
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    if(nbTex != -1)
+    {
+        std::string local = "projectShadow";
+
+        glUniformMatrix4fv(glGetUniformLocation(shaderId, local.c_str()), 1, false, glm::value_ptr(shadow.matrixProj));
+
+        local = "viewShadow";
+
+        glUniformMatrix4fv(glGetUniformLocation(shaderId, local.c_str()), 1, false, glm::value_ptr(shadow.matrixView));
+
+        local = "sizeShadow";
+
+        glUniform1i(glGetUniformLocation(shaderId, local.c_str()), shadow.size);
+
+        glActiveTexture(GL_TEXTURE0 + nbTex);
+        glBindTexture(GL_TEXTURE_2D, shadow.tex);
+
+        local = "shadowMap";
+
+        glUniform1i(glGetUniformLocation(shaderId, local.c_str()), nbTex);
+
+        local = "active";
+
+        glUniform1i(glGetUniformLocation(shaderId, local.c_str()), shadow.active);
+    }
 }
 
 void Lights::setLight(const Light light, const size_t index)
@@ -240,6 +268,16 @@ float Lights::getAmbient(const size_t index)
     return lights[index].ambient;
 }
 
+float Lights::getIntensity(const size_t index)
+{
+    if(index >= lights.size())
+    {
+        return 0;
+    }
+
+    return lights[index].intensity;
+}
+
 std::string Lights::getName(const size_t index)
 {
     if(index >= lights.size())
@@ -258,4 +296,29 @@ void Lights::setAmbient(const float ambient, const size_t index)
     }
 
     lights[index].ambient = ambient;
+}
+
+void Lights::InitShadow()
+{
+    glGenFramebuffers(1, &shadow.fbo);
+
+    // Créer la texture qui stockera les profondeurs
+    glGenTextures(1, &shadow.tex);
+    glBindTexture(GL_TEXTURE_2D, shadow.tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow.size, shadow.size, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = {1.0, 1.0, 1.0, 1.0};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+    // Attacher la texture au framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, shadow.fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow.tex, 0);
+    glDrawBuffer(GL_NONE); // On n'a pas besoin de color buffer
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    shadow.active = true;
 }
