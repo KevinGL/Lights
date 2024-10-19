@@ -24,6 +24,17 @@ int main(void)
         glViewport(0, 0, lights.getShadow()->size, lights.getShadow()->size);
         glBindFramebuffer(GL_FRAMEBUFFER, lights.getShadow()->fbo);
 
+        const glm::vec3 toLight = //to the sun, fix a distance
+        const glm::vec3 posLight = posOfYourCam + toLight;
+
+        const float frustumSize = 60.0f;
+
+        matProj = glm::ortho(-frustumSize / 2, frustumSize / 2, -frustumSize / 2, frustumSize / 2, 1.0f, frustumSize);
+        matView = glm::lookAt(posLight, posOfYourCam, glm::vec3(0.0f, 0.0f, 1.0f));
+
+        lights->getShadow()->matrixProj = matProj;
+        lights->getShadow()->matrixView = matView;
+
         glClear(GL_DEPTH_BUFFER_BIT);
 
         //////////////////////

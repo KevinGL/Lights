@@ -24,20 +24,20 @@ float PI = 3.1415926535897932384626433832795;
 
 float calculShadow(Light light, vec3 normalApp)
 {
-	if(active == 0)
+	vec3 projCoords = projShadow.xyz / projShadow.w;
+	projCoords = projCoords * 0.5 + 0.5;
+	
+	if(active == 0 || projCoords.z < 0 || projCoords.z > 1)
 	{
 		return 1.0;
 	}
-	
-	vec3 projCoords = projShadow.xyz / projShadow.w;
-	projCoords = projCoords * 0.5 + 0.5;
 	
 	float shadow = 0.0;
 	float currentDepth = projCoords.z;
 	float totalWeight = 0.0;
 	float texelSize = 1.0 / sizeShadow;
 	
-	int res = 2;
+	int res = 3;
 	
 	for(int y = -res; y <= res; y++)
 	{
